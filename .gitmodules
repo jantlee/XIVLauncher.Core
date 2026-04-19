@@ -1,3 +1,4 @@
 [submodule "lib/FFXIVQuickLauncher"]
 	path = lib/FFXIVQuickLauncher
-	url = https://github.com/goatcorp/FFXIVQuickLauncher
+	url = https://github.com/jantlee/FFXIVQuickLauncher.git
+	branch = patch-retry
