@@ -933,7 +933,7 @@ public class MainPage : Page
         });
         */
 
-        this.App.StartLoading(string.Format(Strings.NowPatching, repository.ToString().ToLowerInvariant()), canCancel: false, isIndeterminate: false);
+        this.App.StartLoading(string.Format(Strings.NowPatching, repository.ToString().ToLowerInvariant()) + " [retries enabled]", canCancel: false, isIndeterminate: false);
 
         try
         {
