@@ -31,10 +31,20 @@ git submodule update --init --recursive
 echo "Building..."
 dotnet publish src/XIVLauncher.Core -r linux-x64 -c Release --self-contained -o "$HOME/xlcore-patched"
 
+XLM_DIR="$HOME/.local/share/Steam/compatibilitytools.d/XLM/xlcore"
+
 echo ""
 echo "=== Build complete ==="
-echo "Patched binary is at ~/xlcore-patched"
+
+if [ -d "$XLM_DIR" ]; then
+    echo "Installing to XLM directory..."
+    cp "$HOME/xlcore-patched/XIVLauncher.Core" "$XLM_DIR/XIVLauncher.Core"
+    echo "Patched binary installed to $XLM_DIR"
+else
+    echo "XLM directory not found at $XLM_DIR"
+    echo "Patched binary is at ~/xlcore-patched/XIVLauncher.Core"
+    echo "Copy it manually to wherever XLM stores XIVLauncher.Core"
+fi
+
 echo ""
-echo "To install, run:"
-echo "  cp ~/xlcore-patched/XIVLauncher.Core ~/.xlcore/XIVLauncher.Core.bak"
-echo "  cp ~/xlcore-patched/* ~/.xlcore/"
+echo "Launch FFXIV through Steam as usual."
