@@ -1026,7 +1026,19 @@ public class MainPage : Page
 
     private void PatcherOnFail(PatchListEntry patch, string context)
     {
-        App.ShowMessageBlocking(string.Format(Strings.CannotVerifyGameFilesError, context, patch.VersionId), Strings.XIVLauncherError);
+        var retryInfo = "";
+        for (int i = 0; i < PatchManager.MAX_DOWNLOADS_AT_ONCE; i++)
+        {
+            if (Program.Patcher.Actives[i]?.Patch.VersionId == patch.VersionId)
+            {
+                retryInfo = $"\nRetried {Program.Patcher.RetryAttempts[i]} time(s) before giving up.";
+                break;
+            }
+        }
+
+        App.ShowMessageBlocking(
+            $"Patch failed: {patch.VersionId}\nReason: {context}\nURL: {patch.Url}{retryInfo}\n\nThis patch failed its hash check after all retry attempts. Restarting the launcher will resume from where it left off.",
+            Strings.XIVLauncherError);
         Environment.Exit(0);
     }
 
