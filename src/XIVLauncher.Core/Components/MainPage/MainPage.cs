@@ -955,7 +955,7 @@ public class MainPage : Page
                         {
                             var active = Program.Patcher.Actives[i];
                             var name = active?.Patch.VersionId ?? "unknown";
-                            retryInfo = $" | Retrying {name} (attempt {Program.Patcher.RetryAttempts[i]}/{PatchManager.MAX_RETRIES_PER_PATCH})";
+                            retryInfo = $" | Retrying {name} (retry #{Program.Patcher.RetryAttempts[i]})";
                             break;
                         }
                     }
