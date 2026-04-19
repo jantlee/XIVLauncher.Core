@@ -1,30 +1,77 @@
-![xlcore_sized](https://user-images.githubusercontent.com/16760685/197423373-b6082cdb-dc1f-46db-8768-3f507f182ba8.png)
+# XIVLauncher.Core (Patched)
 
-# XIVLauncher.Core  [![Discord Shield](https://discordapp.com/api/guilds/581875019861328007/widget.png?style=shield)](https://discord.gg/3NMcUV5)
-Cross-platform version of XIVLauncher, optimized for Steam Deck. Comes with a version of [WINE tuned for FFXIV](https://github.com/goatcorp/wine-xiv-git).
+Fork of [goatcorp/XIVLauncher.Core](https://github.com/goatcorp/XIVLauncher.Core) with per-patch retry logic for the patcher. Fixes the long-standing issue where a single failed hash check cancels all concurrent downloads and requires a full restart.
 
-## Using on Steam Deck
-If you want to use XIVLauncher on your Steam Deck, feel free to [follow our guide in our FAQ](https://goatcorp.github.io/faq/steamdeck). If you're having trouble, you can [join our Discord server](https://discord.gg/3NMcUV5) - please don't use the GitHub issues for troubleshooting unless you're sure that your problem is an actual issue with XIVLauncher.
+## What This Fixes
 
-## Building & Contributing
-1. Clone this repository with submodules
-2. Make sure you have a recent (.NET 10+) version of the .NET SDK installed
-2. Run `dotnet build` or `dotnet publish`
+The upstream patcher has no retry logic. When any single patch fails a hash check (common due to in-transit corruption from Akamai's CDN), it calls `CancelAllDownloads()` and stops everything. On fresh installs (60+ GB), this means restarting the entire patch process repeatedly until every file happens to download without corruption.
 
-Common components that are shared with the Windows version of XIVLauncher are linked as a submodule in the "lib" folder. XIVLauncher Core can run on Windows, but is by far not as polished as the [original Windows version](https://github.com/goatcorp/FFXIVQuickLauncher). Windows users should not use this application unless for troubleshooting purposes or development work.
+This fork adds:
+- Per-patch retry (up to 3 retries per patch, 2.5s delay between attempts)
+- Automatic deletion and re-download of corrupted patch files
+- Other concurrent downloads continue uninterrupted when one patch fails
+- Fatal failure only after all retries are exhausted
 
-## Distribution
-XIVLauncher Core has community packages for various Linux distributions. Please be aware that **only the Flathub version is official**, but the others are **packaged by trusted community members**.  The community packages may not always be up-to-date, or may have versions that are broken or contain features under testing (especially if labeled as unstable or git). We can't take any responsibility for their safety or reliability.
+## Install (SteamOS / Steam Deck)
 
-| Repo        | Status      |
-| ----------- | ----------- |
-| [**Flathub (official)**](https://flathub.org/apps/details/dev.goats.xivlauncher) | ![Flathub](https://img.shields.io/flathub/v/dev.goats.xivlauncher) |
-| [AUR](https://aur.archlinux.org/packages/xivlauncher) | ![AUR version](https://img.shields.io/aur/version/xivlauncher) |
-| [AUR (bin)](https://aur.archlinux.org/packages/xivlauncher-bin) | ![AUR version](https://img.shields.io/aur/version/xivlauncher-bin) |
-| [AUR (git)](https://aur.archlinux.org/packages/xivlauncher-git) | ![AUR version](https://img.shields.io/aur/version/xivlauncher-git) |
-| [Copr (Fedora+openSuse+EL9)](https://copr.fedorainfracloud.org/coprs/rankyn/xivlauncher/) | ![COPR version](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Frankynbass%2FXIVLauncher4rpm%2Fmain%2Fbadge.json)|
-| [GURU (Gentoo)](https://gitweb.gentoo.org/repo/proj/guru.git/tree/games-util/xivlauncher) | ![GURU version](https://repology.org/badge/version-for-repo/gentoo_ovl_guru/xivlauncher.core.svg?header=guru) |
-| [nixpkgs stable](https://search.nixos.org/packages?channel=25.11&from=0&size=50&sort=relevance&type=packages&query=xivlauncher) | ![nixpkgs stable version](https://repology.org/badge/version-for-repo/nix_stable_25_11/xivlauncher.core.svg?header=nixpkgs%2025.11) |
-| [nixpkgs unstable](https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=xivlauncher) | ![nixpkgs unstable version](https://repology.org/badge/version-for-repo/nix_unstable/xivlauncher.core.svg?header=nixpkgs%20unstable) |
-| [PPA (Ubuntu)](https://launchpad.net/~linneris/+archive/ubuntu/xivlauncher-core-stable) | ![PPA version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Flaunchpad.net%2Fapi%2F1.0%2F~linneris%2F%2Barchive%2Fxivlauncher-core-stable%3Fws.op%3DgetPublishedBinaries%26binary_name%3Dxivlauncher-core%26status%3DPublished%26distro_arch_series%3Dhttps%3A%2F%2Flaunchpad.net%2Fapi%2F1.0%2Fubuntu%2Fnoble%2Famd64&query=%24.entries[0].binary_package_version&logo=ubuntu&label=PPA&color=dark-green) |
-| [AppImage](https://github.com/spiteful-fox/xivlauncher-appimage/releases/latest) | ![AppImage version](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fspiteful-fox%2Fxivlauncher-appimage%2Frefs%2Fheads%2Fmain%2Fbadge.json) |
+One command in Konsole (Desktop Mode):
+
+```bash
+cd ~ && curl -sSL https://raw.githubusercontent.com/jantlee/XIVLauncher.Core/patch-retry/install.sh | bash
+```
+
+This installs the .NET SDK (to `~/.dotnet/`), clones the repo, builds the patched binary, and outputs it to `~/xlcore-patched/`.
+
+Then copy the patched binary over the XLM-managed one:
+
+```bash
+cp -r ~/xlcore-patched/* ~/.xlcore/
+```
+
+Launch FFXIV normally through Steam (Game Mode or Desktop Mode). XLM loads the patched binary from `~/.xlcore/`.
+
+## Updating
+
+If the upstream XIVLauncher.Core releases an update, XLM will overwrite your patched binary. Re-run the install script to rebuild and re-copy.
+
+## Building Manually
+
+```bash
+git clone https://github.com/jantlee/XIVLauncher.Core.git
+cd XIVLauncher.Core
+git checkout patch-retry
+git submodule update --init --recursive
+dotnet publish src/XIVLauncher.Core -r linux-x64 -c Release --self-contained -o ~/xlcore-patched
+```
+
+Requires .NET SDK 10.0+.
+
+## FAQ
+
+**Q: Will this break my existing FFXIV install?**
+No. The retry logic only changes how the patcher handles download failures. Successfully downloaded patches and your existing game files are untouched. If you have a partial download in progress, it picks up where it left off.
+
+**Q: Do I lose Dalamud / plugins?**
+No. Dalamud, plugins, and all config files live in `~/.xlcore/` and are not affected by replacing the launcher binary.
+
+**Q: What happens when XLM auto-updates XIVLauncher?**
+XLM will overwrite the patched binary with the official release. Re-run the install script to rebuild and copy again. Your game files and config are unaffected.
+
+**Q: Does this work on regular Linux (not SteamOS)?**
+Yes. The install script works on any Linux with `git` and `bash`. The build targets `linux-x64`.
+
+**Q: Does this work on Windows?**
+No. This fork is for XIVLauncher.Core (Linux/SteamOS). The Windows version of XIVLauncher is a separate project.
+
+**Q: Can I use the official launcher to patch and then switch to this?**
+Yes. The game files are the same regardless of which launcher downloaded them.
+
+**Q: The install script fails with "cannot access parent directories"**
+Run `cd ~` first, then re-run the script. This happens when the terminal's current directory was deleted.
+
+**Q: How do I go back to the official XIVLauncher?**
+Delete `~/xlcore-patched/` and `~/XIVLauncher.Core/`. Next time XLM updates, it restores the official binary automatically. Or force it: in Desktop Mode, launch FFXIV and XLM will re-download the official XIVLauncher.Core.
+
+## Credits
+
+Based on [goatcorp/XIVLauncher.Core](https://github.com/goatcorp/XIVLauncher.Core). All credit to the goatcorp team for XIVLauncher and Dalamud.
