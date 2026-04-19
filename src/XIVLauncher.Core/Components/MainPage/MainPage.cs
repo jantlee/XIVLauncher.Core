@@ -948,7 +948,19 @@ public class MainPage : Page
                 {
                     Thread.Sleep(30);
 
-                    App.LoadingPage.Line2 = string.Format(Strings.WorkingOnStatus, Program.Patcher.CurrentInstallIndex, Program.Patcher.Downloads.Count);
+                    var retryInfo = "";
+                    for (int i = 0; i < PatchManager.MAX_DOWNLOADS_AT_ONCE; i++)
+                    {
+                        if (Program.Patcher.Slots[i] == PatchManager.SlotState.Retrying)
+                        {
+                            var active = Program.Patcher.Actives[i];
+                            var name = active?.Patch.VersionId ?? "unknown";
+                            retryInfo = $" | Retrying {name} (attempt {Program.Patcher.RetryAttempts[i]}/{PatchManager.MAX_RETRIES_PER_PATCH})";
+                            break;
+                        }
+                    }
+
+                    App.LoadingPage.Line2 = string.Format(Strings.WorkingOnStatus, Program.Patcher.CurrentInstallIndex, Program.Patcher.Downloads.Count) + retryInfo;
                     App.LoadingPage.Line3 = string.Format(Strings.LeftToDownloadStatus, MathHelpers.BytesToString(Program.Patcher.AllDownloadsLength < 0 ? 0 : Program.Patcher.AllDownloadsLength),
                         MathHelpers.BytesToString(Program.Patcher.Speeds.Sum()));
 
